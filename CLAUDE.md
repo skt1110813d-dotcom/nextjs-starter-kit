@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 개요
 
-Next.js 15, TypeScript, TailwindCSS v4, ShadcnUI를 사용한 모던 웹 애플리케이션 스타터킷입니다.
+Next.js 16, React 19, TypeScript, TailwindCSS v4, ShadcnUI를 사용한 모던 웹 애플리케이션 스타터킷입니다.
 한국어로 작성된 프로덕션 레디 템플릿으로, 빠른 웹 개발을 목표로 합니다.
 
 ## 개발 명령어
 
 ```bash
-# 개발 서버 실행
+# 개발 서버 실행 (http://localhost:3000)
 npm run dev
 
 # 프로덕션 빌드
@@ -21,6 +21,9 @@ npm start
 
 # 린트 검사
 npm run lint
+
+# ShadcnUI 컴포넌트 추가
+npx shadcn@latest add [component-name]
 ```
 
 ## 아키텍처 및 구조
@@ -39,14 +42,18 @@ npm run lint
 - `components/layout/theme-toggle.tsx`: 다크/라이트 모드 전환 컴포넌트
 
 ### 페이지 구조
-Next.js App Router를 사용하며, 각 폴더에 `page.tsx` 파일로 라우트를 정의합니다:
-- `/` - 홈 (Hero, Features, Tech Stack, CTA 섹션)
+Next.js App Router를 사용하며, 각 폴더에 `page.tsx` 파일로 라우트를 정의합니다.
+
+현재 구현된 페이지:
+- `/` - 홈 (Hero, Features, Tech Stack, Quick Start 섹션)
 - `/about` - 회사 소개
 - `/features` - 상세 기능 설명
 - `/pricing` - 가격 정책 및 FAQ
 - `/contact` - 문의 양식
-- `/login` - 로그인
+- `/login` - 로그인 (인증 폼 예제)
 - `/signup` - 회원가입
+
+참고: Header의 `navItems` 배열에 "/dashboard", "/examples/components" 링크가 있지만 해당 페이지들은 아직 구현되지 않았습니다.
 
 ### 컴포넌트 시스템
 
@@ -88,7 +95,7 @@ npx shadcn@latest add [component-name]
 ### 새 페이지 추가
 1. `app/` 디렉토리에 새 폴더 생성
 2. 폴더 내에 `page.tsx` 파일 생성
-3. `components/layout/header.tsx`의 `navItems` 배열에 링크 추가
+3. `components/layout/header.tsx`의 `navItems` 배열 (10-16행)에 링크 추가
 
 ### 새 UI 컴포넌트 추가
 공통 UI 컴포넌트는 `components/ui/`에 위치하며, 대부분 ShadcnUI에서 생성됩니다.
@@ -102,3 +109,19 @@ npx shadcn@latest add [component-name]
 - 모든 주석과 문서는 **한국어**로 작성
 - 변수명/함수명은 영어 (코드 표준)
 - 커밋 메시지는 한국어
+
+## MCP 통합
+
+### Playwright MCP
+브라우저 자동화 및 테스트를 위한 Playwright MCP가 설정되어 있습니다 (`.mcp.json`).
+Claude Code에서 Playwright 도구를 사용하여 웹페이지 테스트 및 디버깅이 가능합니다.
+
+## 알려진 이슈
+
+### 미구현 페이지
+Header 네비게이션에 다음 링크들이 있지만 해당 페이지들은 아직 구현되지 않았습니다:
+- `/dashboard` - 대시보드 페이지 (홈페이지 Quick Start 섹션에서도 링크됨)
+- `/examples/components` - 컴포넌트 UI 쇼케이스
+- `/examples/forms` - 폼 유효성 검사 예제
+
+이 페이지들을 구현하거나, Header의 `navItems` 배열과 홈페이지의 Quick Start 섹션에서 링크를 제거해야 합니다.
