@@ -7,23 +7,100 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Github, Mail } from "lucide-react";
+import { isValidEmail, isStrongPassword } from "@/lib/validators";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    general: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // 에러 초기화
+    setErrors({
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      general: "",
+    });
+
+    // 유효성 검사
+    const newErrors = {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      general: "",
+    };
+
+    if (name.trim().length < 2) {
+      newErrors.name = "이름은 최소 2자 이상이어야 합니다.";
+    }
+
+    if (!isValidEmail(email)) {
+      newErrors.email = "올바른 이메일 주소를 입력해주세요.";
+    }
+
+    if (!isStrongPassword(password)) {
+      newErrors.password =
+        "비밀번호는 최소 8자 이상이며, 대문자, 소문자, 숫자, 특수문자를 포함해야 합니다.";
+    }
+
     if (password !== confirmPassword) {
-      alert("비밀번호가 일치하지 않습니다.");
+      newErrors.confirmPassword = "비밀번호가 일치하지 않습니다.";
+    }
+
+    if (
+      newErrors.name ||
+      newErrors.email ||
+      newErrors.password ||
+      newErrors.confirmPassword
+    ) {
+      setErrors(newErrors);
       return;
     }
 
-    // 회원가입 로직 구현
-    console.log("회원가입:", { name, email, password });
+    setIsSubmitting(true);
+
+    try {
+      // TODO: API 호출로 교체 필요
+      // const response = await fetch("/api/auth/signup", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ name, email, password }),
+      // });
+      //
+      // if (!response.ok) {
+      //   throw new Error("회원가입 실패");
+      // }
+      //
+      // const data = await response.json();
+      // window.location.href = "/login";
+
+      // 임시: 개발 중에는 alert로 표시
+      alert("회원가입 기능은 아직 구현 중입니다.");
+    } catch (error) {
+      setErrors({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        general: "회원가입 중 오류가 발생했습니다. 다시 시도해주세요.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -59,6 +136,11 @@ export default function SignupPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {errors.general && (
+              <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
+                {errors.general}
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="name">이름</Label>
               <Input
@@ -68,7 +150,12 @@ export default function SignupPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                aria-invalid={!!errors.name}
+                className={errors.name ? "border-destructive" : ""}
               />
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">이메일</Label>
@@ -79,7 +166,12 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                aria-invalid={!!errors.email}
+                className={errors.email ? "border-destructive" : ""}
               />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">비밀번호</Label>
@@ -89,7 +181,12 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                aria-invalid={!!errors.password}
+                className={errors.password ? "border-destructive" : ""}
               />
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">비밀번호 확인</Label>
@@ -99,10 +196,17 @@ export default function SignupPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
+                aria-invalid={!!errors.confirmPassword}
+                className={errors.confirmPassword ? "border-destructive" : ""}
               />
+              {errors.confirmPassword && (
+                <p className="text-sm text-destructive">
+                  {errors.confirmPassword}
+                </p>
+              )}
             </div>
-            <Button type="submit" className="w-full">
-              회원가입
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "회원가입 중..." : "회원가입"}
             </Button>
           </form>
         </CardContent>

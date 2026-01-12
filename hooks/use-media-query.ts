@@ -8,13 +8,19 @@ import { useEffect, useState } from "react";
  * @returns 미디어 쿼리가 매치되는지 여부
  */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
+  // Lazy initialization으로 초기값 설정
+  const [matches, setMatches] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia(query).matches;
+  });
 
   useEffect(() => {
     const media = window.matchMedia(query);
 
-    // 초기 값 설정
-    setMatches(media.matches);
+    // 현재 값과 다를 때만 업데이트
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
 
     // 변경 감지 리스너
     const listener = (e: MediaQueryListEvent) => {
@@ -26,7 +32,7 @@ export function useMediaQuery(query: string): boolean {
 
     // 정리
     return () => media.removeEventListener("change", listener);
-  }, [query]);
+  }, [query, matches]);
 
   return matches;
 }
