@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+# Project Context
+- PRD 문서: @docs/PRD.md
+- 개발 로드맵: @docs/ROADMAP.md
+
 ## 프로젝트 개요
 
 Next.js 16.1.1, React 19.2.3, TypeScript, TailwindCSS v4, ShadcnUI를 사용한 모던 웹 애플리케이션 스타터킷입니다.
@@ -15,7 +19,11 @@ Next.js 16.1.1, React 19.2.3, TypeScript, TailwindCSS v4, ShadcnUI를 사용한 
 - **컴포넌트**: ShadcnUI (new-york 스타일)
 - **아이콘**: Lucide React
 - **상태관리**: React Hooks (추후 Zustand 통합 가능)
-- **폼**: useState 기반 (추후 React Hook Form + Zod 통합 가능)
+- **폼 유효성**: Zod
+- **데이터베이스**: Notion API (@notionhq/client)
+- **PDF 생성**: jsPDF + html2canvas
+- **날짜 처리**: date-fns
+- **토큰 생성**: nanoid
 
 ## 빠른 시작
 
@@ -82,7 +90,23 @@ cladue-nextjs-starters/
 ├── lib/                        # 유틸리티 함수
 │   ├── utils.ts                # cn() 함수
 │   ├── format.ts               # 포맷팅 함수
-│   └── validators.ts           # 유효성 검사 함수
+│   ├── validators.ts           # 유효성 검사 함수
+│   ├── api/                    # API 에러 처리
+│   │   └── errors.ts
+│   ├── auth/                   # 인증 유틸리티
+│   │   └── token.ts
+│   ├── notion/                 # Notion API 클라이언트
+│   │   ├── client.ts           # Notion 클라이언트 설정
+│   │   ├── parser.ts           # Notion 응답 파싱
+│   │   └── queries.ts          # 데이터베이스 쿼리
+│   ├── pdf/                    # PDF 생성
+│   │   └── generator.ts
+│   ├── types/                  # TypeScript 타입 정의
+│   │   ├── api.ts              # API 요청/응답 타입
+│   │   ├── invoice.ts          # 견적서 타입
+│   │   └── notion.ts           # Notion API 타입
+│   └── validations/            # Zod 스키마
+│       └── invoice.ts
 ├── public/                     # 정적 파일
 ├── .mcp.json                   # MCP 서버 설정
 ├── components.json             # ShadcnUI 설정
@@ -464,5 +488,111 @@ DATABASE_URL=postgresql://...
 
 ---
 
-**마지막 업데이트**: 2026-01-15
+## 견적서 시스템 (Invoice System)
+
+### 개요
+Notion 데이터베이스를 백엔드로 활용하여 견적서 웹 조회 및 PDF 다운로드를 제공하는 시스템입니다.
+
+### 주요 기능
+- **견적서 목록 조회**: 검색, 필터링, 정렬, 페이지네이션
+- **견적서 상세 보기**: 전체 정보 표시 (고객 정보, 항목, 금액)
+- **PDF 다운로드**: 브랜드 템플릿 적용된 PDF 생성
+- **토큰 기반 인증**: 고유 URL 토큰으로 접근 제어
+
+### 환경 변수 설정
+`.env.example`을 `.env.local`로 복사하여 설정:
+```bash
+cp .env.example .env.local
+```
+
+필수 환경 변수:
+- `NOTION_API_KEY`: Notion Integration API 키
+- `NOTION_DATABASE_ID`: 견적서 데이터베이스 ID
+- `NEXT_PUBLIC_BASE_URL`: 사이트 기본 URL
+
+### 타입 시스템
+주요 타입 정의는 `lib/types/` 디렉토리에 있습니다:
+```typescript
+import type { Invoice, InvoiceSummary, ApiResponse } from "@/lib/types";
+```
+
+### Notion API 사용
+```typescript
+import { getInvoices, getInvoiceById, validateToken } from "@/lib/notion";
+
+// 견적서 목록 조회
+const { invoices, pagination } = await getInvoices({
+  token: "access-token",
+  search: "검색어",
+  statusFilter: ["Sent", "Approved"],
+  sort: "date_desc",
+  page: 1,
+  limit: 20,
+});
+
+// 견적서 상세 조회
+const invoice = await getInvoiceById("notion-page-id", "access-token");
+
+// 토큰 검증
+const isValid = await validateToken("access-token");
+```
+
+### PDF 생성
+```typescript
+import { generateInvoicePdf } from "@/lib/pdf";
+
+// HTML 요소를 PDF로 변환하여 다운로드
+const result = await generateInvoicePdf("invoice-content", invoice, {
+  scale: 2,
+  margin: 10,
+});
+```
+
+### 유효성 검사 (Zod)
+```typescript
+import { getInvoicesParamsSchema, invoiceSchema } from "@/lib/validations";
+
+// 요청 파라미터 검증
+const result = getInvoicesParamsSchema.safeParse(queryParams);
+if (result.success) {
+  const { token, search, status } = result.data;
+}
+```
+
+### 에러 처리
+```typescript
+import { handleApiError, Errors } from "@/lib/api";
+
+// API Route에서 에러 처리
+try {
+  // 비즈니스 로직
+} catch (error) {
+  return handleApiError(error);
+}
+
+// 사전 정의된 에러 생성
+throw Errors.unauthorized("인증이 필요합니다");
+throw Errors.notFound("견적서를 찾을 수 없습니다");
+```
+
+### 인증 유틸리티
+```typescript
+import { generateAccessToken, isValidTokenFormat, generateAccessUrl } from "@/lib/auth";
+
+// 새 토큰 생성
+const token = generateAccessToken(32);
+
+// 토큰 형식 검증
+if (isValidTokenFormat(token)) {
+  // 유효한 형식
+}
+
+// 접근 URL 생성
+const url = generateAccessUrl(token);
+// → https://example.com/invoices?token=xxx
+```
+
+---
+
+**마지막 업데이트**: 2026-01-16
 **프로젝트 버전**: 0.1.0
